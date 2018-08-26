@@ -20,10 +20,26 @@ app.post( '/catstats', function( req, res ){
   res.contentType( 'application/json; charset=utf-8' );
   console.log( 'POST /catstats' );
 
-  //. req.body.values = [ 1.0, 2.0, 3.0, .., 10.0 ];
-  //. req.body.categories = [ 'A', 'A', 'B', .., 'C' ];
-  var values = ( req.body.values && req.body.values.length ) ? req.body.values : null;
-  var categories = ( req.body.categories && req.body.categories.length ) ? req.body.categories : null;
+  //. req.body.inputs = [ { value: 1.0, category: 'A' }, { value: 2.0, category: 'A' }, { value: 3.0, category: 'B' }, .., { value: 10.0, category: 'C' } ];
+  var inputs = ( req.body.inputs && req.body.inputs.length ) ? req.body.inputs : null;
+  var values = null;
+  var categories = null;
+  if( inputs ){
+    values = [];
+    categories = [];
+    inputs.forEach( function( input ){
+      if( input.category ){
+        categories.push( input.category );
+        values.push( input.value ? input.value : 0 );
+      }
+    });
+  }else{
+    //. req.body.values = [ 1.0, 2.0, 3.0, .., 10.0 ];
+    //. req.body.categories = [ 'A', 'A', 'B', .., 'C' ];
+    values = ( req.body.values && req.body.values.length ) ? req.body.values : null;
+    categories = ( req.body.categories && req.body.categories.length ) ? req.body.categories : null;
+  }
+
 
   if( values && categories && values.length == categories.length ){
     //. distinct categories
