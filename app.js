@@ -15,10 +15,10 @@ app.get( '/', function( req, res ){
   res.render( 'index', {} );
 });
 
-//. Categorized Average
-app.post( '/catavg', function( req, res ){
+//. Categorized Stats
+app.post( '/catstats', function( req, res ){
   res.contentType( 'application/json; charset=utf-8' );
-  console.log( 'POST /catavg' );
+  console.log( 'POST /catstats' );
 
   //. req.body.values = [ 1.0, 2.0, 3.0, .., 10.0 ];
   //. req.body.categories = [ 'A', 'A', 'B', .., 'C' ];
@@ -33,95 +33,29 @@ app.post( '/catavg', function( req, res ){
 
     //. categorized sum
     var cs = categorizedSum( categories, values, cats, index );
-    var avgs = cs.vals;
+    var sums = cs.vals;
+    var avgs = new Array(sums.length);
     var cnts = cs.cnts;
-
-    for( var i = 0; i < avgs.length; i ++ ){
-      avgs[i] /= cnts[i];
-    }
-
-    res.write( JSON.stringify( { status: true, categories: cats, catavgs: avgs, counts: cnts }, 2, null ) );
-    res.end();
-  }else{
-    res.status( 400 );
-    res.write( JSON.stringify( { status: false, message: 'values and categories need to be posted as array with same length.' }, 2, null ) );
-    res.end();
-  }
-});
-
-//. Categorized Variance
-app.post( '/catvar', function( req, res ){
-  res.contentType( 'application/json; charset=utf-8' );
-  console.log( 'POST /catvar' );
-
-  //. req.body.values = [ 1.0, 2.0, 3.0, .., 10.0 ];
-  //. req.body.categories = [ 'A', 'A', 'B', .., 'C' ];
-  var values = ( req.body.values && req.body.values.length ) ? req.body.values : null;
-  var categories = ( req.body.categories && req.body.categories.length ) ? req.body.categories : null;
-
-  if( values && categories && values.length == categories.length ){
-    //. distinct categories
-    var dc = distinctCategories( categories );
-    var cats = dc.cats;
-    var index = dc.index;
-
-    //. categorized sum
-    var cs = categorizedSum( categories, values, cats, index );
-    var avgs = cs.vals;
-    var cnts = cs.cnts;
-    for( var i = 0; i < avgs.length; i ++ ){
-      avgs[i] /= cnts[i];
+    for( var i = 0; i < sums.length; i ++ ){
+      avgs[i] = sums[i] / cnts[i];
     }
 
     //. categorized sum distance
     var cds = categorizedSumDistance( categories, values, cats, index, avgs );
     var vars = cs.vals;
+    var stds = new Array(vars.length);
     for( var i = 0; i < vars.length; i ++ ){
       vars[i] /= cnts[i];
+      stds[i] = Math.pow( vars[i], 0.5 );
     }
 
-    res.write( JSON.stringify( { status: true, categories: cats, catvars: vars, counts: cnts }, 2, null ) );
-    res.end();
-  }else{
-    res.status( 400 );
-    res.write( JSON.stringify( { status: false, message: 'values and categories need to be posted as array with same length.' }, 2, null ) );
-    res.end();
-  }
-});
-
-//. Categorized Stdev
-app.post( '/catstd', function( req, res ){
-  res.contentType( 'application/json; charset=utf-8' );
-  console.log( 'POST /catstd' );
-
-  //. req.body.values = [ 1.0, 2.0, 3.0, .., 10.0 ];
-  //. req.body.categories = [ 'A', 'A', 'B', .., 'C' ];
-  var values = ( req.body.values && req.body.values.length ) ? req.body.values : null;
-  var categories = ( req.body.categories && req.body.categories.length ) ? req.body.categories : null;
-
-  if( values && categories && values.length == categories.length ){
-    //. distinct categories
-    var dc = distinctCategories( categories );
-    var cats = dc.cats;
-    var index = dc.index;
-
-    //. categorized sum
-    var cs = categorizedSum( categories, values, cats, index );
-    var avgs = cs.vals;
-    var cnts = cs.cnts;
-    for( var i = 0; i < avgs.length; i ++ ){
-      avgs[i] /= cnts[i];
+    var result = {};
+    for( var i = 0; i < cats.length; i ++ ){
+      var category = { sum: sums[i], average: avgs[i], variance: vars[i], stddev: stds[i], count: cnts[i] };
+      result[cats[i]] = category;
     }
 
-    //. categorized sum distance
-    var cds = categorizedSumDistance( categories, values, cats, index, avgs );
-    var stds = cs.vals;
-    for( var i = 0; i < stds.length; i ++ ){
-      stds[i] /= cnts[i];
-      stds[i] = Math.pow( stds[i], 0.5 );
-    }
-
-    res.write( JSON.stringify( { status: true, categories: cats, catstds: stds, counts: cnts }, 2, null ) );
+    res.write( JSON.stringify( { status: true, result: result }, 2, null ) );
     res.end();
   }else{
     res.status( 400 );
@@ -173,7 +107,6 @@ function categorizedSumDistance( categories, values, cats, index, avgs ){
 
   return { vals: vals, cnts: cnts };
 }
-
 
 
 var port = appEnv.port || 3000;
